@@ -49,5 +49,10 @@ namespace HuynnLib
             StartCoroutine(coroutine);
         }
 
+        public void MainStopCoroutine(IEnumerator coroutine)
+        {
+            StopCoroutine(coroutine);
+        }
+
     }
 }
