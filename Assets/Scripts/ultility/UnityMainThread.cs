@@ -44,5 +44,10 @@ namespace HuynnLib
             jobs.Enqueue(newJob);
         }
 
+        public void MainStartCoroutine(IEnumerator coroutine)
+        {
+            StartCoroutine(coroutine);
+        }
+
     }
 }

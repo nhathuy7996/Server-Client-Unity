@@ -50,8 +50,61 @@ namespace Networking
             this.request.SetRequestHeader("Authorization", $"Bearer {Module.jwt}");
             this.request.SendWebRequest();
 
+            void onRequestDone()
+            {
+                if (this.request.result == UnityWebRequest.Result.Success)
+                {
+
+                    if (onDone != null)
+                    {
+                        try
+                        {
+                            UnityMainThread.wkr.AddJob(() =>
+                            {
+                                onDone(this, true);
+                            });
+
+                        }
+                        catch (Exception e)
+                        {
+                            Debug.LogError("request--> " + this.request.uri + "---- invoke done error: \n " + e);
+                        }
+
+                    }
+                }
+                else
+                {
+
+                    if (onDone != null)
+                    {
+                        try
+                        {
+                            UnityMainThread.wkr.AddJob(() =>
+                            {
+                                onDone(this, false);
+                            });
+                        }
+                        catch (Exception e)
+                        {
+                            Debug.LogError("request--> " + this.request.uri + "---- invoke fail error: \n " + e);
+                        }
+
+                    }
+                }
+
+            }
+
+            IEnumerator waitForRequest()
+            {
+                yield return new WaitUntil(() => this.request.isDone);
+                onRequestDone();
+            }
+
+
+
 #if UNITY_WEBGL && !UNITY_EDITOR
                 Debug.Log("WebGL detected, using coroutine for request waiting");
+                UnityMainThread.wkr.MainStartCoroutine(waitForRequest());
                 return this;
 #endif
 
@@ -62,49 +115,14 @@ namespace Networking
                 timer += 10;
             }
 
-            if (this.request.result == UnityWebRequest.Result.Success)
-            {
-
-                if (onDone != null)
-                {
-                    try
-                    {
-                        UnityMainThread.wkr.AddJob(() =>
-                        {
-                            onDone(this, true);
-                        });
-
-                    }
-                    catch (Exception e)
-                    {
-                        Debug.LogError("request--> " + this.request.uri + "---- invoke done error: \n " + e);
-                    }
-
-                }
-            }
-            else
-            {
-
-                if (onDone != null)
-                {
-                    try
-                    {
-                        UnityMainThread.wkr.AddJob(() =>
-                        {
-                            onDone(this, false);
-                        });
-                    }
-                    catch (Exception e)
-                    {
-                        Debug.LogError("request--> " + this.request.uri + "---- invoke fail error: \n " + e);
-                    }
-
-                }
-            }
-
+            onRequestDone();
             return this;
         }
 
+        public void SendAsync(System.Action<RequestBase, bool> onDone = null)
+        {
+            _ = Send(onDone);
+        }
         public string getResHeader(string key) => this.request.GetResponseHeader(key);
 
         public bool isDone => this.request.isDone;

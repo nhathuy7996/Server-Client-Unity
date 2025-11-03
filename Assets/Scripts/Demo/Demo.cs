@@ -12,6 +12,19 @@ public class Demo : MonoBehaviour
         {
             Debug.Log("Connected to server Unity side ");
         });
+
+        var request = new RequestBase("api/public/getData");
+        request.SendAsync((req, isSuccess) =>
+        {
+            if (isSuccess)
+            {
+                Debug.Log("Request succeeded: ");
+            }
+            else
+            {
+                Debug.LogError("Request failed: ");
+            }
+        });
     }
 
 
