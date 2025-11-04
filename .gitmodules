@@ -1,0 +1,3 @@
+[submodule "SERVER"]
+	path = SERVER
+	url = git@github.com:nhathuy7996/Server-Nodejs-Template.git
