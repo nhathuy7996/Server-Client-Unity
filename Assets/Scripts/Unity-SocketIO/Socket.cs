@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using SimpleJSON;
 using UnityEngine;
 
 namespace Networking.SocketIo
@@ -76,7 +77,8 @@ namespace Networking.SocketIo
             this.client = client;
             client.OnAny((string eventname, SocketIOClient.SocketIOResponse res) =>
             {
-                InvokeEvent(eventname, res.GetValue<string>());
+                var resData = res.ToString().Remove(0, 1).Remove(res.ToString().Length - 2, 1);
+                InvokeEvent(eventname, resData);
             });
 
             client.OnConnected += (sender, e) =>
@@ -217,6 +219,7 @@ namespace Networking.SocketIo
                     act.Invoke(data);
                 }
             }
+
         }
 
 #if UNITY_WEBGL && !UNITY_EDITOR
