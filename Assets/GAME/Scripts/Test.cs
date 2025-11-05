@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Networking;
 using UnityEngine;
 
 public class Test : MonoBehaviour
@@ -11,7 +12,22 @@ public class Test : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        NetworkingPeer.Instant.ConnectToServer(OnSocketConnected);
+    }
 
+    void OnSocketConnected()
+    {
+        Debug.Log("Connected to server at " + Module.baseUrl);
+        NetworkingPeer.Instant.EmmitEvent("startGame", "{}");
+        NetworkingPeer.Instant.ListenEvent("game:allPlayersState", (data) =>
+        {
+            Debug.Log("Game started event received with data: " + data);
+        });
+
+        NetworkingPeer.Instant.ListenEvent("game:playerUpdates", (data) =>
+       {
+           Debug.Log("Game player updates event received with data: " + data);
+       });
     }
 
     // Update is called once per frame

@@ -24,7 +24,7 @@ namespace HuynnLib
             }
         }
 
-        void Awake()
+        protected virtual void Awake()
         {
             if (_instant != null && _instant.gameObject.GetInstanceID() != this.gameObject.GetInstanceID())
             {

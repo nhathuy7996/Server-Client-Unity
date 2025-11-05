@@ -46,6 +46,12 @@ public class PlayerMove : MonoBehaviour
         // Áp dụng velocity cho Rigidbody 3D (giữ nguyên Y velocity để không ảnh hưởng gravity)
         Vector3 velocity = new Vector3(moveDirection.x * moveSpeed, rb.velocity.y, moveDirection.z * moveSpeed);
         rb.velocity = velocity;
+
+        if (moveDirection.magnitude > 0.5f)
+        {
+            Networking.NetworkingPeer.Instant.EmmitEvent("player:onMove",
+                "{\"position\":{\"x\":" + transform.position.x + ",\"y\":" + transform.position.y + ",\"z\":" + transform.position.z + "} }");
+        }
     }
 
     void RotatePlayer()
