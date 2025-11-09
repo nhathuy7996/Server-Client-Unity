@@ -1016,6 +1016,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   animController: {fileID: 0}
   idleClip: {fileID: 0}
+  playerPrefab: {fileID: 8370953593258646412, guid: 0d0ba24d55f224eed84337df94a76bb7, type: 3}
+  players:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
 --- !u!4 &1947781532
 Transform:
   m_ObjectHideFlags: 0

@@ -108,9 +108,6 @@ public class AnimController : MonoBehaviour
         // Sử dụng CrossFade để chuyển đổi mượt mà
         animator.CrossFade(newState.ToString(), crossFadeDuration);
         currentState = newState;
-
-        // Debug log (có thể tắt trong production)
-        Debug.Log($"Animation changed to: {newState}");
     }
 
     public void SetCustomAnimation(string animationName, float fadeDuration = -1f)
