@@ -13,7 +13,7 @@ public class AnimController : MonoBehaviour
 
     [Header("Movement References")]
     [SerializeField] private PlayerMove playerMove;
-    [SerializeField] private Rigidbody rb;
+    private PlayerData playerData;
 
     [Header("Animation Override")]
     [SerializeField] private AnimatorOverrideController overrideController;
@@ -40,8 +40,8 @@ public class AnimController : MonoBehaviour
         if (playerMove == null)
             playerMove = GetComponent<PlayerMove>();
 
-        if (rb == null)
-            rb = GetComponent<Rigidbody>();
+        if (playerData == null)
+            playerData = GetComponentInParent<PlayerData>();
 
         // Kiểm tra animator có tồn tại không
         if (animator == null)
@@ -78,15 +78,15 @@ public class AnimController : MonoBehaviour
 
     void CalculateMovementSpeed()
     {
-        if (rb != null)
+        if (playerData != null)
         {
             // Sử dụng velocity của rigidbody để tính tốc độ
-            Vector3 horizontalVelocity = new Vector3(rb.velocity.x, 0, rb.velocity.z);
+            Vector3 horizontalVelocity = new Vector3(playerData.velocity.x, 0, playerData.velocity.z);
             currentSpeed = horizontalVelocity.magnitude;
         }
         else
         {
-            // Fallback: sử dụng PlayerMove nếu có
+            playerData = GetComponentInParent<PlayerData>();
             currentSpeed = 0f;
         }
     }

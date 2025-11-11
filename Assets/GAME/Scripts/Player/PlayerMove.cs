@@ -2,14 +2,17 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using HuynnLib;
+using SimpleJSON;
 
 public class PlayerMove : MonoBehaviour
 {
     [SerializeField] private float moveSpeed = 5f;
     [SerializeField] private float rotationSpeed = 10f;
     [SerializeField] private Rigidbody rb;
+    private PlayerData playerData;
 
     private Vector3 moveDirection;
+    bool bandWidthLimit = false;
 
     // Start is called before the first frame update
     void Start()
@@ -46,11 +49,28 @@ public class PlayerMove : MonoBehaviour
         // Áp dụng velocity cho Rigidbody 3D (giữ nguyên Y velocity để không ảnh hưởng gravity)
         Vector3 velocity = new Vector3(moveDirection.x * moveSpeed, rb.velocity.y, moveDirection.z * moveSpeed);
         rb.velocity = velocity;
+        if (playerData == null)
+            playerData = GetComponent<PlayerData>();
+        playerData.velocity = velocity;
 
         if (moveDirection.magnitude > 0.5f)
         {
+            bandWidthLimit = false;
+            var positionJson = JsonUtility.ToJson(transform.position);
+            var velocityJson = JsonUtility.ToJson(velocity);
+
             Networking.NetworkingPeer.Instant.EmmitEvent("player:onMove",
-                "{\"position\":{\"x\":" + transform.position.x + ",\"y\":" + transform.position.y + ",\"z\":" + transform.position.z + "} }");
+                $"{{ \"position\": {positionJson} , \"velocity\": {velocityJson} }}");
+        }
+        else if (!bandWidthLimit)
+        {
+            bandWidthLimit = true;
+
+            var positionJson = JsonUtility.ToJson(transform.position);
+            var velocityJson = JsonUtility.ToJson(Vector3.zero);
+
+            Networking.NetworkingPeer.Instant.EmmitEvent("player:onMove",
+                $"{{ \"position\": {positionJson} , \"velocity\": {velocityJson} }}");
         }
     }
 

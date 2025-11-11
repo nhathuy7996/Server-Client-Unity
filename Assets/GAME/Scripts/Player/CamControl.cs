@@ -5,7 +5,7 @@ using UnityEngine;
 public class CamControl : MonoBehaviour
 {
     [Header("Target Settings")]
-    [SerializeField] private Transform target; // Player transform
+    [SerializeField] public Transform target; // Player transform
 
     [Header("Follow Settings")]
     [SerializeField] private Vector3 offset = new Vector3(0, 5, -7); // Khoảng cách camera với player
