@@ -34,8 +34,8 @@ jobs:
       
       - name: Build for Android
         run: |
-          & "C:\Program Files\Unity\Hub\Editor\2022.3.62f2\Editor\Unity.exe" -quit -batchmode -nographics -projectPath "${{ github.workspace }}" -buildTarget Android -executeMethod BuildScript.BuildAndroid -logFile -
-        shell: powershell
+          "C:\Program Files\Unity\Hub\Editor\2022.3.62f2\Editor\Unity.exe" -quit -batchmode -nographics -projectPath "${{ github.workspace }}" -buildTarget Android -executeMethod BuildScript.BuildAndroid -logFile -
+        shell: cmd
       
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
