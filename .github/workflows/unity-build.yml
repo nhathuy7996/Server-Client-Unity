@@ -14,7 +14,7 @@ on:
 jobs:
   build:
     name: Build Unity Project
-    runs-on: [self-hosted, dtva-laptop]
+    runs-on: [self-hosted, Windows, X64]
     
     steps:
       - name: Checkout Repository
