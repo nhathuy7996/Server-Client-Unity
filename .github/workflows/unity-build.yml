@@ -1,0 +1,55 @@
+name: Unity Build
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+  pull_request:
+    branches:
+      - develop
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Unity Project
+    runs-on: [self-hosted, dtva-laptop]
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+          submodules: recursive
+      
+      - name: Cache Library
+        uses: actions/cache@v3
+        with:
+          path: Library
+          key: Library-${{ runner.os }}-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          restore-keys: |
+            Library-${{ runner.os }}-
+            Library-
+      
+      - name: Build for Android
+        run: |
+          "C:\Program Files\Unity\Hub\Editor\2022.3.62f2\Editor\Unity.exe" `
+            -quit `
+            -batchmode `
+            -nographics `
+            -projectPath "${{ github.workspace }}" `
+            -buildTarget Android `
+            -executeMethod BuildScript.BuildAndroid `
+            -logFile -
+        shell: pwsh
+      
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: build-artifacts
+          path: |
+            Builds/
+            Logs/
+          retention-days: 7
