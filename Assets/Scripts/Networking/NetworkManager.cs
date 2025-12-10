@@ -148,10 +148,21 @@ namespace Networking
                     JSONNode json = JSON.Parse(data);
                     localPlayerId = json["playerId"].AsInt;
 
-                    Debug.Log($"[NetworkManager] Player joined! My ID: {localPlayerId}");
+                    // Get spawn position from server
+                    Vector3 spawnPos = Vector3.zero;
+                    if (json["position"] != null)
+                    {
+                        spawnPos = new Vector3(
+                            json["position"]["x"].AsFloat,
+                            json["position"]["y"].AsFloat,
+                            json["position"]["z"].AsFloat
+                        );
+                    }
 
-                    // Spawn local player
-                    SpawnLocalPlayer();
+                    Debug.Log($"[NetworkManager] Player joined! My ID: {localPlayerId}, Spawn at: {spawnPos}");
+
+                    // Spawn local player at server-provided position
+                    SpawnLocalPlayer(spawnPos);
 
                     // Spawn existing players
                     JSONArray players = json["players"].AsArray;
@@ -344,18 +355,15 @@ namespace Networking
         }
 
         /// <summary>
-        /// Spawn local player
+        /// Spawn local player at specified position
         /// </summary>
-        private void SpawnLocalPlayer()
+        private void SpawnLocalPlayer(Vector3 spawnPos)
         {
             if (localPlayerObject != null)
             {
                 Debug.LogWarning("[NetworkManager] Local player already exists!");
                 return;
             }
-
-            Vector3 spawnPos = spawnPosition + UnityEngine.Random.insideUnitSphere * spawnRadius;
-            spawnPos.y = spawnPosition.y;
 
             localPlayerObject = Instantiate(localPlayerPrefab, spawnPos, Quaternion.identity);
 
@@ -437,9 +445,10 @@ namespace Networking
         }
 
         /// <summary>
-        /// Send player position update to server
+        /// Send player velocity update to server
+        /// Server will calculate position based on velocity
         /// </summary>
-        public void SendPlayerPosition(Vector3 position, Vector3 velocity)
+        public void SendPlayerVelocity(Vector3 velocity)
         {
             if (!isConnected || !isInGame) return;
 
@@ -448,11 +457,18 @@ namespace Networking
 
             var data = new
             {
-                position = position,
                 velocity = velocity
             };
 
-            peer.EmmitEvent("client:updatePosition", JSON.ToJSON(data));
+            peer.EmmitEvent("client:updateVelocity", JSON.ToJSON(data));
+        }
+
+        /// <summary>
+        /// [DEPRECATED] For PlayerController compatibility (not used in PlayerMove setup)
+        /// </summary>
+        public void SendPlayerPosition(Vector3 position, Vector3 velocity)
+        {
+            SendPlayerVelocity(velocity);
         }
 
         private void OnDestroy()

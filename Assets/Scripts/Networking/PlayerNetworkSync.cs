@@ -40,7 +40,7 @@ public class PlayerNetworkSync : MonoBehaviour
         lastUpdateTime = Time.time;
     }
 
-    private void Update()
+    private void FixedUpdate()
     {
         if (!isLocalPlayer) return;
 
@@ -89,18 +89,17 @@ public class PlayerNetworkSync : MonoBehaviour
         // Get current velocity from PlayerData
         Vector3 currentVelocity = playerData != null ? playerData.velocity : Vector3.zero;
 
-        // Check if position or velocity has changed significantly
-        float positionDelta = Vector3.Distance(transform.position, lastSentPosition);
+        // Check if velocity has changed significantly
         float velocityDelta = Vector3.Distance(currentVelocity, lastSentVelocity);
 
-        if (positionDelta > 0.01f || velocityDelta > 0.01f)
+        if (velocityDelta > 0.01f)
         {
-            // Send update to server
+            // Send velocity update to server (server will calculate position)
             NetworkManager manager = NetworkManager.Instant;
             if (manager != null && manager.IsInGame)
             {
-                manager.SendPlayerPosition(transform.position, currentVelocity);
-                // Debug.Log($"[PlayerNetworkSync] Sent position: {transform.position}, velocity: {currentVelocity}");
+                manager.SendPlayerVelocity(currentVelocity);
+                // Debug.Log($"[PlayerNetworkSync] Sent velocity: {currentVelocity}");
             }
             else
             {
@@ -110,6 +109,10 @@ public class PlayerNetworkSync : MonoBehaviour
             lastSentPosition = transform.position;
             lastSentVelocity = currentVelocity;
             lastUpdateTime = Time.time;
+        }
+        else
+        {
+            // Debug.LogError($"[PlayerNetworkSync] Velocity delta too small to send: {currentVelocity} - {lastSentVelocity}");
         }
     }
 
