@@ -23,6 +23,11 @@ namespace HuynnLib
         }
         Queue<Action> jobs = new Queue<Action>();
 
+        void Awake()
+        {
+            _instance = this;
+        }
+
         void Update()
         {
             while (jobs.Count > 0)

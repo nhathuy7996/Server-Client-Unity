@@ -94,8 +94,10 @@ GameObject:
   - component: {fileID: 1072611206857581120}
   - component: {fileID: 910433453901302277}
   - component: {fileID: 604570161899201909}
-  - component: {fileID: 8459012520115844314}
-  - component: {fileID: -4755545092542407435}
+  - component: {fileID: 616407648039477961}
+  - component: {fileID: -3898763568945186496}
+  - component: {fileID: -3715562744758442571}
+  - component: {fileID: -5094764604718738109}
   m_Layer: 6
   m_Name: PlayerController
   m_TagString: Untagged
@@ -169,7 +171,33 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 112
   m_CollisionDetection: 0
---- !u!114 &8459012520115844314
+--- !u!143 &616407648039477961
+CharacterController:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6899423164941031401}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Height: 2
+  m_Radius: 0.5
+  m_SlopeLimit: 45
+  m_StepOffset: 0.3
+  m_SkinWidth: 0.08
+  m_MinMoveDistance: 0.001
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &-3898763568945186496
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -184,7 +212,7 @@ MonoBehaviour:
   moveSpeed: 5
   rotationSpeed: 10
   rb: {fileID: 0}
---- !u!114 &-4755545092542407435
+--- !u!114 &-3715562744758442571
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -198,6 +226,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerID: 0
   velocity: {x: 0, y: 0, z: 0}
+--- !u!114 &-5094764604718738109
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6899423164941031401}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dde05f4d3c150412fa09153dea95f22e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  positionUpdateRate: 0.05
+  playerId: -1
+  isLocalPlayer: 0
 --- !u!1001 &2362462617309140029
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -315,5 +358,5 @@ MonoBehaviour:
   animator: {fileID: 1218268267818136851}
   crossFadeDuration: 0.2
   moveThreshold: 0.1
-  playerMove: {fileID: 8459012520115844314}
+  playerMove: {fileID: 0}
   overrideController: {fileID: 0}

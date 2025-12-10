@@ -164,7 +164,8 @@ namespace SimpleJSON
             }
             public KeyValuePair<string, JSONNode> Current
             {
-                get {
+                get
+                {
                     if (type == Type.Array)
                         return new KeyValuePair<string, JSONNode>(string.Empty, m_Array.Current);
                     else if (type == Type.Object)
@@ -336,7 +337,7 @@ namespace SimpleJSON
             get
             {
                 double v = 0.0;
-                if (double.TryParse(Value,NumberStyles.Float, CultureInfo.InvariantCulture, out v))
+                if (double.TryParse(Value, NumberStyles.Float, CultureInfo.InvariantCulture, out v))
                     return v;
                 return 0.0;
             }
@@ -502,7 +503,8 @@ namespace SimpleJSON
         private static StringBuilder m_EscapeBuilder;
         internal static StringBuilder EscapeBuilder
         {
-            get {
+            get
+            {
                 if (m_EscapeBuilder == null)
                     m_EscapeBuilder = new StringBuilder();
                 return m_EscapeBuilder;
@@ -1423,6 +1425,251 @@ namespace SimpleJSON
         public static JSONNode Parse(string aJSON)
         {
             return JSONNode.Parse(aJSON);
+        }
+
+        public static string ToJSON(object obj, int maxDepth = 10)
+        {
+            var visited = new HashSet<object>();
+            return ToJSONInternal(obj, visited, 0, maxDepth);
+        }
+
+        private static string ToJSONInternal(object obj, HashSet<object> visited, int depth, int maxDepth)
+        {
+            if (obj == null)
+                return "null";
+
+            if (depth >= maxDepth)
+                return "null"; // Prevent infinite recursion
+
+            var type = obj.GetType();
+
+            // Handle primitive types
+            if (type == typeof(string))
+                return "\"" + JSONNode.Escape((string)obj) + "\"";
+
+            if (type == typeof(bool))
+                return ((bool)obj) ? "true" : "false";
+
+            if (type == typeof(int) || type == typeof(uint) ||
+                type == typeof(long) || type == typeof(ulong) ||
+                type == typeof(short) || type == typeof(ushort) ||
+                type == typeof(byte) || type == typeof(sbyte))
+                return obj.ToString();
+
+            if (type == typeof(float) || type == typeof(double) || type == typeof(decimal))
+                return Convert.ToDouble(obj).ToString(CultureInfo.InvariantCulture);
+
+            // Check for circular reference (only for reference types)
+            if (!type.IsValueType)
+            {
+                if (visited.Contains(obj))
+                    return "null"; // Circular reference detected
+                visited.Add(obj);
+            }
+
+            try
+            {
+                // Handle arrays
+                if (type.IsArray)
+                {
+                    var array = obj as Array;
+                    var jsonArray = new JSONArray();
+                    foreach (var item in array)
+                    {
+                        jsonArray.Add(ToJSONNodeInternal(item, visited, depth + 1, maxDepth));
+                    }
+                    return jsonArray.ToString();
+                }
+
+                // Handle IEnumerable (List, etc.)
+                if (obj is IEnumerable && !(obj is string))
+                {
+                    var jsonArray = new JSONArray();
+                    foreach (var item in (IEnumerable)obj)
+                    {
+                        jsonArray.Add(ToJSONNodeInternal(item, visited, depth + 1, maxDepth));
+                    }
+                    return jsonArray.ToString();
+                }
+
+                // Handle Dictionary
+                if (obj is IDictionary)
+                {
+                    var dict = obj as IDictionary;
+                    var jsonObject = new JSONObject();
+                    foreach (DictionaryEntry entry in dict)
+                    {
+                        jsonObject.Add(entry.Key.ToString(), ToJSONNodeInternal(entry.Value, visited, depth + 1, maxDepth));
+                    }
+                    return jsonObject.ToString();
+                }
+
+                // Handle custom objects using reflection
+                var jsonObj = new JSONObject();
+                var fields = type.GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+                foreach (var field in fields)
+                {
+                    try
+                    {
+                        jsonObj.Add(field.Name, ToJSONNodeInternal(field.GetValue(obj), visited, depth + 1, maxDepth));
+                    }
+                    catch
+                    {
+                        // Skip fields that throw exceptions
+                    }
+                }
+
+                var properties = type.GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+                foreach (var property in properties)
+                {
+                    if (property.CanRead && property.GetIndexParameters().Length == 0)
+                    {
+                        try
+                        {
+                            jsonObj.Add(property.Name, ToJSONNodeInternal(property.GetValue(obj, null), visited, depth + 1, maxDepth));
+                        }
+                        catch
+                        {
+                            // Skip properties that throw exceptions
+                        }
+                    }
+                }
+
+                return jsonObj.ToString();
+            }
+            finally
+            {
+                // Remove from visited set when done (allow same object in different branches)
+                if (!type.IsValueType)
+                {
+                    visited.Remove(obj);
+                }
+            }
+        }
+
+        private static JSONNode ToJSONNodeInternal(object obj, HashSet<object> visited, int depth, int maxDepth)
+        {
+            if (obj == null)
+                return JSONNull.CreateOrGet();
+
+            if (depth >= maxDepth)
+                return JSONNull.CreateOrGet(); // Prevent infinite recursion
+
+            var type = obj.GetType();
+
+            // Handle primitive types
+            if (type == typeof(string))
+                return new JSONString((string)obj);
+
+            if (type == typeof(bool))
+                return new JSONBool((bool)obj);
+
+            if (type == typeof(int))
+                return new JSONNumber((int)obj);
+
+            if (type == typeof(long))
+                return new JSONNumber((long)obj);
+
+            if (type == typeof(float))
+                return new JSONNumber((float)obj);
+
+            if (type == typeof(double))
+                return new JSONNumber((double)obj);
+
+            if (type == typeof(uint) || type == typeof(ulong) ||
+                type == typeof(short) || type == typeof(ushort) ||
+                type == typeof(byte) || type == typeof(sbyte))
+                return new JSONNumber(Convert.ToDouble(obj));
+
+            if (type == typeof(decimal))
+                return new JSONNumber(Convert.ToDouble(obj));
+
+            // Check for circular reference (only for reference types)
+            if (!type.IsValueType)
+            {
+                if (visited.Contains(obj))
+                    return JSONNull.CreateOrGet(); // Circular reference detected
+                visited.Add(obj);
+            }
+
+            try
+            {
+                // Handle arrays
+                if (type.IsArray)
+                {
+                    var array = obj as Array;
+                    var jsonArray = new JSONArray();
+                    foreach (var item in array)
+                    {
+                        jsonArray.Add(ToJSONNodeInternal(item, visited, depth + 1, maxDepth));
+                    }
+                    return jsonArray;
+                }
+
+                // Handle IEnumerable (List, etc.)
+                if (obj is IEnumerable && !(obj is string))
+                {
+                    var jsonArray = new JSONArray();
+                    foreach (var item in (IEnumerable)obj)
+                    {
+                        jsonArray.Add(ToJSONNodeInternal(item, visited, depth + 1, maxDepth));
+                    }
+                    return jsonArray;
+                }
+
+                // Handle Dictionary
+                if (obj is IDictionary)
+                {
+                    var dict = obj as IDictionary;
+                    var jsonObject = new JSONObject();
+                    foreach (DictionaryEntry entry in dict)
+                    {
+                        jsonObject.Add(entry.Key.ToString(), ToJSONNodeInternal(entry.Value, visited, depth + 1, maxDepth));
+                    }
+                    return jsonObject;
+                }
+
+                // Handle custom objects using reflection
+                var jsonObj = new JSONObject();
+                var fields = type.GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+                foreach (var field in fields)
+                {
+                    try
+                    {
+                        jsonObj.Add(field.Name, ToJSONNodeInternal(field.GetValue(obj), visited, depth + 1, maxDepth));
+                    }
+                    catch
+                    {
+                        // Skip fields that throw exceptions
+                    }
+                }
+
+                var properties = type.GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+                foreach (var property in properties)
+                {
+                    if (property.CanRead && property.GetIndexParameters().Length == 0)
+                    {
+                        try
+                        {
+                            jsonObj.Add(property.Name, ToJSONNodeInternal(property.GetValue(obj, null), visited, depth + 1, maxDepth));
+                        }
+                        catch
+                        {
+                            // Skip properties that throw exceptions
+                        }
+                    }
+                }
+
+                return jsonObj;
+            }
+            finally
+            {
+                // Remove from visited set when done (allow same object in different branches)
+                if (!type.IsValueType)
+                {
+                    visited.Remove(obj);
+                }
+            }
         }
     }
 }

@@ -53,25 +53,6 @@ public class PlayerMove : MonoBehaviour
             playerData = GetComponent<PlayerData>();
         playerData.velocity = velocity;
 
-        if (moveDirection.magnitude > 0.5f)
-        {
-            bandWidthLimit = false;
-            var positionJson = JsonUtility.ToJson(transform.position);
-            var velocityJson = JsonUtility.ToJson(velocity);
-
-            Networking.NetworkingPeer.Instant.EmmitEvent("player:onMove",
-                $"{{ \"position\": {positionJson} , \"velocity\": {velocityJson} }}");
-        }
-        else if (!bandWidthLimit)
-        {
-            bandWidthLimit = true;
-
-            var positionJson = JsonUtility.ToJson(transform.position);
-            var velocityJson = JsonUtility.ToJson(Vector3.zero);
-
-            Networking.NetworkingPeer.Instant.EmmitEvent("player:onMove",
-                $"{{ \"position\": {positionJson} , \"velocity\": {velocityJson} }}");
-        }
     }
 
     void RotatePlayer()
