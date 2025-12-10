@@ -44,7 +44,7 @@ namespace Networking
         }
 
         /// <summary>
-        /// Update player state from server
+        /// Update player state from server (full update)
         /// </summary>
         public void UpdateState(Vector3 position, Vector3 velocity, float health)
         {
@@ -52,6 +52,39 @@ namespace Networking
             targetVelocity = velocity;
             this.playerData.health = health;
             this.playerData.velocity = velocity;
+        }
+
+        /// <summary>
+        /// Update only position (for partial updates)
+        /// </summary>
+        public void UpdatePosition(Vector3 position)
+        {
+            targetPosition = position;
+        }
+
+        /// <summary>
+        /// Update only velocity (for partial updates)
+        /// </summary>
+        public void UpdateVelocity(Vector3 velocity)
+        {
+            targetVelocity = velocity;
+            this.playerData.velocity = velocity;
+        }
+
+        /// <summary>
+        /// Update only health (for partial updates)
+        /// </summary>
+        public void UpdateHealth(float health)
+        {
+            this.playerData.health = health;
+        }
+
+        /// <summary>
+        /// Update only speed (for partial updates)
+        /// </summary>
+        public void UpdateSpeed(float speed)
+        {
+            this.playerData.speed = speed;
         }
 
 

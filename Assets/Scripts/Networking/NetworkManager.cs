@@ -271,28 +271,19 @@ namespace Networking
                         // Skip local player
                         if (id == localPlayerId) continue;
 
-                        Vector3 position = new Vector3(
-                            playerData["position"]["x"].AsFloat,
-                            playerData["position"]["y"].AsFloat,
-                            playerData["position"]["z"].AsFloat
-                        );
-                        Vector3 velocity = new Vector3(
-                            playerData["velocity"]["x"].AsFloat,
-                            playerData["velocity"]["y"].AsFloat,
-                            playerData["velocity"]["z"].AsFloat
-                        );
-                        float health = playerData["health"].AsFloat;
-
-                        // Update remote player state
-                        if (remotePlayers.ContainsKey(id))
-                        {
-                            remotePlayers[id].UpdateState(position, velocity, health);
-                            updatedCount++;
-                        }
-                        else
+                        // Check if player exists
+                        if (!remotePlayers.ContainsKey(id))
                         {
                             Debug.LogWarning($"[NetworkManager] Player {id} not found in remotePlayers");
+                            continue;
                         }
+
+                        NetworkPlayer remotePlayer = remotePlayers[id];
+
+                        // Dynamically update only fields that are present (dirty tracking)
+                        UpdatePlayerFields(remotePlayer, playerData);
+
+                        updatedCount++;
                     }
 
                     if (updatedCount > 0)
@@ -305,6 +296,51 @@ namespace Networking
                     Debug.LogError($"[NetworkManager] Error parsing playersUpdate data: {e.Message}");
                 }
             });
+        }
+
+        /// <summary>
+        /// Update player fields dynamically based on what's present in JSON
+        /// </summary>
+        private void UpdatePlayerFields(NetworkPlayer player, JSONNode data)
+        {
+            // Position
+            if (data["position"] != null)
+            {
+                Vector3 position = new Vector3(
+                    data["position"]["x"].AsFloat,
+                    data["position"]["y"].AsFloat,
+                    data["position"]["z"].AsFloat
+                );
+                player.UpdatePosition(position);
+            }
+
+            // Velocity
+            if (data["velocity"] != null)
+            {
+                Vector3 velocity = new Vector3(
+                    data["velocity"]["x"].AsFloat,
+                    data["velocity"]["y"].AsFloat,
+                    data["velocity"]["z"].AsFloat
+                );
+                player.UpdateVelocity(velocity);
+            }
+
+            // Health
+            if (data["health"] != null)
+            {
+                player.UpdateHealth(data["health"].AsFloat);
+            }
+
+            // Speed (if exists)
+            if (data["speed"] != null)
+            {
+                player.UpdateSpeed(data["speed"].AsFloat);
+            }
+
+            // Easy to add more fields here as needed
+            // Example: 
+            // if (data["mana"] != null) player.UpdateMana(data["mana"].AsFloat);
+            // if (data["stamina"] != null) player.UpdateStamina(data["stamina"].AsFloat);
         }
 
         /// <summary>
@@ -416,7 +452,6 @@ namespace Networking
                 velocity = velocity
             };
 
-            Debug.Log(JSON.ToJSON(data));
             peer.EmmitEvent("client:updatePosition", JSON.ToJSON(data));
         }
 
