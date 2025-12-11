@@ -161,6 +161,21 @@ namespace Networking
 
                     Debug.Log($"[NetworkManager] Player joined! My ID: {localPlayerId}, Spawn at: {spawnPos}");
 
+                    // Parse and generate map from mapData
+                    if (json["mapData"] != null)
+                    {
+                        Debug.Log("[NetworkManager] Generating map from server data...");
+                        MapGenerator mapGenerator = FindObjectOfType<MapGenerator>();
+                        if (mapGenerator != null)
+                        {
+                            mapGenerator.GenerateMapFromJSON(json["mapData"].ToString());
+                        }
+                        else
+                        {
+                            Debug.LogWarning("[NetworkManager] MapGenerator not found in scene!");
+                        }
+                    }
+
                     // Spawn local player at server-provided position
                     SpawnLocalPlayer(spawnPos);
 
@@ -266,6 +281,7 @@ namespace Networking
                 {
                     JSONNode json = JSON.Parse(data);
                     JSONArray players = json["players"].AsArray;
+                    long timestamp = json["timestamp"].AsLong;
 
                     if (players == null)
                     {
@@ -278,11 +294,24 @@ namespace Networking
                     foreach (JSONNode playerData in players)
                     {
                         int id = playerData["id"].AsInt;
+                        long sequenceNumber = playerData["sequenceNumber"].AsLong;
 
-                        // Skip local player
-                        if (id == localPlayerId) continue;
+                        // UPDATE LOCAL PLAYER position từ server
+                        if (id == localPlayerId)
+                        {
+                            if (localPlayerNetworkSync != null && playerData["position"] != null)
+                            {
+                                Vector3 serverPosition = new Vector3(
+                                    playerData["position"]["x"].AsFloat,
+                                    playerData["position"]["y"].AsFloat,
+                                    playerData["position"]["z"].AsFloat
+                                );
+                                localPlayerNetworkSync.UpdateServerPosition(serverPosition, sequenceNumber);
+                            }
+                            continue;
+                        }
 
-                        // Check if player exists
+                        // Check if remote player exists
                         if (!remotePlayers.ContainsKey(id))
                         {
                             Debug.LogWarning($"[NetworkManager] Player {id} not found in remotePlayers");
@@ -292,7 +321,7 @@ namespace Networking
                         NetworkPlayer remotePlayer = remotePlayers[id];
 
                         // Dynamically update only fields that are present (dirty tracking)
-                        UpdatePlayerFields(remotePlayer, playerData);
+                        UpdatePlayerFields(remotePlayer, playerData, sequenceNumber, timestamp);
 
                         updatedCount++;
                     }
@@ -312,7 +341,7 @@ namespace Networking
         /// <summary>
         /// Update player fields dynamically based on what's present in JSON
         /// </summary>
-        private void UpdatePlayerFields(NetworkPlayer player, JSONNode data)
+        private void UpdatePlayerFields(NetworkPlayer player, JSONNode data, long sequenceNumber = 0, long timestamp = 0)
         {
             // Position
             if (data["position"] != null)
@@ -322,7 +351,7 @@ namespace Networking
                     data["position"]["y"].AsFloat,
                     data["position"]["z"].AsFloat
                 );
-                player.UpdatePosition(position);
+                player.UpdatePosition(position, sequenceNumber);
             }
 
             // Velocity

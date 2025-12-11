@@ -11,11 +11,21 @@ public class PlayerNetworkSync : MonoBehaviour
     [Header("Network Settings")]
     [SerializeField] private float positionUpdateRate = 0.05f; // 20 times per second
 
+    [Header("Position Reconciliation")]
+    [SerializeField] private float maxPositionError = 2f; // Ngưỡng để correction
+    [SerializeField] private float snapThreshold = 5f; // Ngưỡng để snap thay vì lerp
+    [SerializeField] private float correctionSpeed = 10f; // Tốc độ correction
+
     private PlayerMove playerMove;
     private PlayerData playerData;
     private Vector3 lastSentPosition;
     private Vector3 lastSentVelocity;
     private float lastUpdateTime;
+
+    // Server authoritative position
+    private Vector3 serverPosition;
+    private long lastSequenceNumber = 0;
+    private bool hasServerPosition = false;
 
     [Header("Player Info")]
     public int playerId = -1;
@@ -44,6 +54,10 @@ public class PlayerNetworkSync : MonoBehaviour
     {
         if (!isLocalPlayer) return;
 
+        // Apply position correction from server (nếu có)
+        ApplyPositionCorrection();
+
+        // Send position update to server
         SendPositionUpdate();
     }
 
@@ -75,6 +89,56 @@ public class PlayerNetworkSync : MonoBehaviour
             playerMove.enabled = false;
 
         Debug.Log($"[PlayerNetworkSync] Initialized as remote player {id}");
+    }
+
+    /// <summary>
+    /// Nhận server position (authoritative) để correct client position
+    /// </summary>
+    public void UpdateServerPosition(Vector3 position, long sequenceNumber = 0)
+    {
+        // Chỉ accept update mới hơn
+        if (sequenceNumber > 0 && sequenceNumber < lastSequenceNumber)
+        {
+            Debug.LogWarning($"[PlayerNetworkSync] Ignoring old position update (seq: {sequenceNumber} < {lastSequenceNumber})");
+            return;
+        }
+
+        lastSequenceNumber = sequenceNumber;
+        serverPosition = position;
+        hasServerPosition = true;
+
+        // Check position error
+        float positionError = Vector3.Distance(transform.position, serverPosition);
+
+        if (positionError > maxPositionError)
+        {
+            if (positionError > snapThreshold)
+            {
+                // Lệch quá xa - snap ngay lập tức
+                transform.position = serverPosition;
+                Debug.LogWarning($"[PlayerNetworkSync {playerId}] Large position error ({positionError:F2}m), snapping to server position");
+            }
+            else
+            {
+                Debug.LogWarning($"[PlayerNetworkSync {playerId}] Position error detected: {positionError:F2}m, correcting...");
+            }
+        }
+    }
+
+    /// <summary>
+    /// Apply position correction từ server
+    /// </summary>
+    private void ApplyPositionCorrection()
+    {
+        if (!hasServerPosition || !isLocalPlayer) return;
+
+        float positionError = Vector3.Distance(transform.position, serverPosition);
+
+        // Nếu lệch trong ngưỡng cho phép, lerp smooth
+        if (positionError > 0.01f && positionError <= maxPositionError)
+        {
+            transform.position = Vector3.Lerp(transform.position, serverPosition, Time.deltaTime * correctionSpeed);
+        }
     }
 
     /// <summary>
