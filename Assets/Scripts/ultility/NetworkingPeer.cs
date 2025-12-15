@@ -26,6 +26,11 @@ namespace Networking
 
             _socket = Networking.SocketIo.SocketIo.establishSocketConnection(Module.baseUrl, data);
             _socket.connect();
+            _socket.on("connect", (string obj) =>
+            {
+                Debug.Log("Connected to server!");
+                onConnected?.Invoke();
+            });
         }
 
         void OnDestroy()
