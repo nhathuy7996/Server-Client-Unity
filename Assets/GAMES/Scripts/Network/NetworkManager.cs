@@ -27,7 +27,13 @@ public class NetworkManager : Singleton<NetworkManager>
 
     void SetupNetworkListener()
     {
+        NetworkingPeer.Instant.ListenEvent("state_update", OnStateUpdateReceived);
+    }
 
+    void OnStateUpdateReceived(string data)
+    {
+        Debug.Log("State update received: " + data);
+        // Parse and apply position update
     }
 
     public void SendPlayerVelocity(Vector3 velocity)

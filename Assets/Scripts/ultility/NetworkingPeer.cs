@@ -45,10 +45,7 @@ namespace Networking
 
         public void ListenEvent(string name, Action<string> callback)
         {
-            UnityMainThread.wkr.AddJob(() =>
-            {
-                _socket?.on(name, callback);
-            });
+            _socket?.on(name, callback);
         }
 
         public void RemoveListener(string name, Action<string> callback)
