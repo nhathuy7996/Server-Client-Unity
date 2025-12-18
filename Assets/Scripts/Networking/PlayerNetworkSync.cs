@@ -25,7 +25,6 @@ public class PlayerNetworkSync : MonoBehaviour
     // Server authoritative position
     private Vector3 serverPosition;
     private long lastSequenceNumber = 0;
-    private bool hasServerPosition = false;
 
     [Header("Player Info")]
     public int playerId = -1;
@@ -105,7 +104,6 @@ public class PlayerNetworkSync : MonoBehaviour
 
         lastSequenceNumber = sequenceNumber;
         serverPosition = position;
-        hasServerPosition = true;
 
         // Check position error
         float positionError = Vector3.Distance(transform.position, serverPosition);
@@ -130,7 +128,7 @@ public class PlayerNetworkSync : MonoBehaviour
     /// </summary>
     private void ApplyPositionCorrection()
     {
-        if (!hasServerPosition || !isLocalPlayer) return;
+        if (!isLocalPlayer) return;
 
         float positionError = Vector3.Distance(transform.position, serverPosition);
 
