@@ -15,6 +15,9 @@ namespace Networking
         [SerializeField] private GameObject localPlayerPrefab;
         [SerializeField] private GameObject remotePlayerPrefab;
 
+        [Header("Bot Prefabs")]
+        [SerializeField] private GameObject botPrefab;
+
         [Header("Spawn Settings")]
         [SerializeField] private Vector3 spawnPosition = Vector3.zero;
         [SerializeField] private float spawnRadius = 5f;
@@ -26,6 +29,7 @@ namespace Networking
         private GameObject localPlayerObject;
         private PlayerNetworkSync localPlayerNetworkSync; // For PlayerMove-based setup
         private Dictionary<int, NetworkPlayer> remotePlayers = new Dictionary<int, NetworkPlayer>();
+        private Dictionary<string, NetworkBot> bots = new Dictionary<string, NetworkBot>();
         private int localPlayerId = -1;
 
         protected override void Awake()
@@ -64,6 +68,12 @@ namespace Networking
 
             // Listen for players update (continuous sync)
             peer.ListenEvent("server:playersUpdate", OnPlayersUpdate);
+
+            // Listen for bots spawned
+            peer.ListenEvent("server:botsSpawned", OnBotsSpawned);
+
+            // Listen for bots update
+            peer.ListenEvent("server:botsUpdate", OnBotsUpdate);
 
             // Listen for disconnect
             peer.ListenEvent("disconnect", OnDisconnected);
@@ -132,6 +142,9 @@ namespace Networking
 
                 // Cleanup all players
                 CleanupAllPlayers();
+
+                // Cleanup all bots
+                CleanupAllBots();
             });
         }
 
@@ -471,6 +484,159 @@ namespace Networking
                 }
             }
             remotePlayers.Clear();
+        }
+
+        /// <summary>
+        /// Called when bots are spawned on server
+        /// </summary>
+        private void OnBotsSpawned(string data)
+        {
+            UnityMainThread.wkr.AddJob(() =>
+            {
+                try
+                {
+                    JSONNode json = JSON.Parse(data);
+                    JSONArray botsArray = json["bots"].AsArray;
+
+                    if (botsArray == null)
+                    {
+                        Debug.LogWarning("[NetworkManager] OnBotsSpawned: bots array is null");
+                        return;
+                    }
+
+                    foreach (JSONNode botData in botsArray)
+                    {
+                        string id = botData["id"];
+                        Vector3 position = new Vector3(
+                            botData["position"]["x"].AsFloat,
+                            botData["position"]["y"].AsFloat,
+                            botData["position"]["z"].AsFloat
+                        );
+                        float hp = botData["hp"].AsFloat;
+                        float dmg = botData["dmg"].AsFloat;
+                        float speed = botData["speed"].AsFloat;
+
+                        SpawnBot(id, position, hp, dmg, speed);
+                    }
+
+                    Debug.Log($"[NetworkManager] Spawned {botsArray.Count} bots");
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError($"[NetworkManager] Error parsing botsSpawned data: {e.Message}");
+                }
+            });
+        }
+
+        /// <summary>
+        /// Called when receiving bots update from server
+        /// </summary>
+        private void OnBotsUpdate(string data)
+        {
+            UnityMainThread.wkr.AddJob(() =>
+            {
+                try
+                {
+                    JSONNode json = JSON.Parse(data);
+                    JSONArray botsArray = json["bots"].AsArray;
+
+                    if (botsArray == null) return;
+
+                    foreach (JSONNode botData in botsArray)
+                    {
+                        string id = botData["id"];
+
+                        if (!bots.ContainsKey(id))
+                        {
+                            Debug.LogWarning($"[NetworkManager] Bot {id} not found");
+                            continue;
+                        }
+
+                        NetworkBot bot = bots[id];
+
+                        // Update position
+                        if (botData["position"] != null)
+                        {
+                            Vector3 position = new Vector3(
+                                botData["position"]["x"].AsFloat,
+                                botData["position"]["y"].AsFloat,
+                                botData["position"]["z"].AsFloat
+                            );
+                            bot.UpdatePosition(position);
+                        }
+
+                        // Update velocity
+                        if (botData["velocity"] != null)
+                        {
+                            Vector3 velocity = new Vector3(
+                                botData["velocity"]["x"].AsFloat,
+                                botData["velocity"]["y"].AsFloat,
+                                botData["velocity"]["z"].AsFloat
+                            );
+                            bot.UpdateVelocity(velocity);
+                        }
+
+                        // Update health
+                        if (botData["hp"] != null)
+                        {
+                            bot.UpdateHealth(botData["hp"].AsFloat);
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError($"[NetworkManager] Error parsing botsUpdate data: {e.Message}");
+                }
+            });
+        }
+
+        /// <summary>
+        /// Spawn a bot
+        /// </summary>
+        private void SpawnBot(string id, Vector3 position, float hp, float dmg, float speed)
+        {
+            if (bots.ContainsKey(id))
+            {
+                Debug.LogWarning($"[NetworkManager] Bot {id} already exists!");
+                return;
+            }
+
+            if (botPrefab == null)
+            {
+                Debug.LogError("[NetworkManager] Bot prefab is not assigned!");
+                return;
+            }
+
+            GameObject botObj = Instantiate(botPrefab, position, Quaternion.identity);
+            NetworkBot networkBot = botObj.GetComponent<NetworkBot>();
+
+            if (networkBot != null)
+            {
+                networkBot.Initialize(id, position, hp, dmg, speed);
+                bots.Add(id, networkBot);
+
+                Debug.Log($"[NetworkManager] Bot {id} spawned at {position}");
+            }
+            else
+            {
+                Debug.LogError("[NetworkManager] Bot prefab missing NetworkBot component!");
+                Destroy(botObj);
+            }
+        }
+
+        /// <summary>
+        /// Cleanup all bots
+        /// </summary>
+        private void CleanupAllBots()
+        {
+            foreach (var bot in bots.Values)
+            {
+                if (bot != null)
+                {
+                    Destroy(bot.gameObject);
+                }
+            }
+            bots.Clear();
         }
 
         /// <summary>

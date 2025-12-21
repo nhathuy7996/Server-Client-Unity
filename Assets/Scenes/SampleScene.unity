@@ -928,6 +928,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   localPlayerPrefab: {fileID: 6899423164941031401, guid: beb05521804f34fac958720ca27de03c, type: 3}
   remotePlayerPrefab: {fileID: 3981650172721745340, guid: 520f7ce0e7a0b4456a1c884c3e375220, type: 3}
+  botPrefab: {fileID: 4514161197659867734, guid: a4d8bc83673ec4cdd91242fcc2d558aa, type: 3}
   spawnPosition: {x: 0, y: 0, z: 0}
   spawnRadius: 5
   isConnected: 0
