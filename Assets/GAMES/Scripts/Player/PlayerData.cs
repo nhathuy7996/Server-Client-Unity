@@ -4,5 +4,6 @@ using UnityEngine;
 
 public class PlayerData : MonoBehaviour
 {
+    public int ID;
     public Vector3 Velocity;
 }

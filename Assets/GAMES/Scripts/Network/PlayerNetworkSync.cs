@@ -6,26 +6,19 @@ public class PlayerNetworkSync : MonoBehaviour
 {
 
     PlayerData _playerData;
+    public PlayerData PlayerData => _playerData;
     PlayerMove _playerMove;
-
-    Vector3 _lastSeenPosition;
     Vector3 _lastSentVelocity;
     float _lastUpdateTime;
 
     float _positionUpdateRate;
 
-    [Header("Player Info")]
-
-    public int playerId = -1;
-    public bool isLocalPlayer = false;
 
     // Start is called before the first frame update
-    void Start()
+    void Awake()
     {
         _playerData = GetComponent<PlayerData>();
         _playerMove = GetComponent<PlayerMove>();
-
-        _lastSeenPosition = transform.position;
     }
 
     void FixedUpdate()
@@ -33,24 +26,6 @@ public class PlayerNetworkSync : MonoBehaviour
         //if (!isLocalPlayer) return;
 
         SendPositionUpdate();
-    }
-
-    void InitializeAsPlayer(int id, bool isLocal = false)
-    {
-        isLocalPlayer = isLocal;
-        playerId = id;
-
-        if (isLocalPlayer)
-        {
-            // Enable local player controls
-            _playerMove.enabled = true;
-        }
-        else
-        {
-            // Disable local player controls for remote players
-            _playerMove.enabled = false;
-        }
-
     }
 
     void SendPositionUpdate()
@@ -70,7 +45,6 @@ public class PlayerNetworkSync : MonoBehaviour
             NetworkManager.Instant.SendPlayerVelocity(currentVelocity);
 
             _lastSentVelocity = currentVelocity;
-            _lastSeenPosition = transform.position;
             _lastUpdateTime = Time.time;
         }
     }
