@@ -13,6 +13,8 @@ public class NetworkManager : Singleton<NetworkManager>
 
     [SerializeField] PlayerNetworkSync localPlayer;
     [SerializeField] List<NetworkPlayer> remotePlayers = new List<NetworkPlayer>();
+
+    [SerializeField] MapGenerator mapGenerator;
     void Start()
     {
         NetworkingPeer peer = NetworkingPeer.Instant;
@@ -35,8 +37,20 @@ public class NetworkManager : Singleton<NetworkManager>
     {
         NetworkingPeer.Instant.ListenEvent("server:playerJoined", OnPlayerJoined);
         NetworkingPeer.Instant.ListenEvent("server:newPlayerJoined", OnNewPlayerJoined);
-        NetworkingPeer.Instant.ListenEvent("state_update", OnStateUpdateReceived);
+        NetworkingPeer.Instant.ListenEvent("server:state_update", OnStateUpdateReceived);
+        NetworkingPeer.Instant.ListenEvent("server:mapData", OnMapDataReceived);
     }
+
+    private void OnMapDataReceived(string obj)
+    {
+        Debug.Log("Map data received: " + obj);
+
+        UnityMainThread.wkr.AddJob(() =>
+        {
+            mapGenerator.GenarateMap(obj);
+        });
+    }
+
 
     private void OnNewPlayerJoined(string obj)
     {
@@ -50,13 +64,14 @@ public class NetworkManager : Singleton<NetworkManager>
 
         UnityMainThread.wkr.AddJob(() =>
         {
+            var player = this.remotePlayers.Find(p => p.playerData.ID == playerID);
+            if (player != null)
+            {
+                return;
+            }
             Vector3 position = new Vector3(x, y, z);
             NetworkPlayer remotePlayer = Instantiate(remotePlayerPrefab, position, Quaternion.identity);
-            PlayerData playerData = remotePlayer.GetComponent<PlayerData>();
-            if (playerData != null)
-            {
-                playerData.ID = playerID;
-            }
+            remotePlayer.playerData.ID = playerID;
             remotePlayers.Add(remotePlayer);
         });
     }
@@ -90,14 +105,16 @@ public class NetworkManager : Singleton<NetworkManager>
                 int id = item["id"].AsInt;
                 var pos = item["dirtyState"]["position"];
                 if (pos == null) continue;
-                if (id == localPlayer.PlayerData.ID)
-                {
-                    continue; // Skip local player
-                }
+
                 float x = pos["x"].AsFloat;
                 float y = pos["y"].AsFloat;
                 float z = pos["z"].AsFloat;
                 Vector3 position = new Vector3(x, y, z);
+                if (id == localPlayer.PlayerData.ID)
+                {
+                    localPlayer.ApplyServerPosition(position);
+                    continue; // Skip local player
+                }
                 NetworkPlayer player = remotePlayers.Find(p => p.playerData.ID == id);
                 if (player != null)
                 {
@@ -106,11 +123,7 @@ public class NetworkManager : Singleton<NetworkManager>
                 else
                 {
                     NetworkPlayer remotePlayer = Instantiate(remotePlayerPrefab, position, Quaternion.identity);
-                    PlayerData playerData = remotePlayer.GetComponent<PlayerData>();
-                    if (playerData != null)
-                    {
-                        playerData.ID = id;
-                    }
+                    remotePlayer.playerData.ID = id;
                     remotePlayers.Add(remotePlayer);
                 }
             }

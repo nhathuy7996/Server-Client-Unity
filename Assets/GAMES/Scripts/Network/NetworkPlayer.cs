@@ -4,7 +4,7 @@ using SimpleJSON;
 public class NetworkPlayer : MonoBehaviour
 {
     private PlayerData _playerData;
-    public PlayerData playerData => _playerData;
+    public PlayerData playerData => _playerData ??= this.GetComponent<PlayerData>();
     float _lastUpdateTime;
 
     void Awake()

@@ -6,12 +6,14 @@ public class PlayerNetworkSync : MonoBehaviour
 {
 
     PlayerData _playerData;
-    public PlayerData PlayerData => _playerData;
+    public PlayerData PlayerData => _playerData ??= GetComponent<PlayerData>();
     PlayerMove _playerMove;
     Vector3 _lastSentVelocity;
     float _lastUpdateTime;
 
     float _positionUpdateRate;
+
+    Vector3 _serverPosition;
 
 
     // Start is called before the first frame update
@@ -26,6 +28,7 @@ public class PlayerNetworkSync : MonoBehaviour
         //if (!isLocalPlayer) return;
 
         SendPositionUpdate();
+        CorrectPosition();
     }
 
     void SendPositionUpdate()
@@ -46,6 +49,25 @@ public class PlayerNetworkSync : MonoBehaviour
 
             _lastSentVelocity = currentVelocity;
             _lastUpdateTime = Time.time;
+        }
+    }
+
+    public void ApplyServerPosition(Vector3 serverPosition)
+    {
+        _serverPosition = serverPosition;
+        float positionError = Vector3.Distance(transform.position, _serverPosition);
+        if (positionError > 2)
+        {
+            transform.position = _serverPosition;
+        }
+    }
+
+    void CorrectPosition()
+    {
+        float positionError = Vector3.Distance(transform.position, _serverPosition);
+        if (positionError > 0.01f && positionError <= 2)
+        {
+            transform.position = Vector3.Lerp(transform.position, _serverPosition, 0.1f);
         }
     }
 
