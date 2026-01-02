@@ -11,9 +11,12 @@ public class PlayerNetworkSync : MonoBehaviour
     Vector3 _lastSentVelocity;
     float _lastUpdateTime;
 
-    float _positionUpdateRate;
+    [SerializeField] private float _positionUpdateRate = 0.05f; // Send every 50ms
+    [SerializeField] private float _maxPositionError = 2f; // Max error before snap
+    [SerializeField] private float _reconciliationSpeed = 5f; // Lerp speed for smooth correction
 
     Vector3 _serverPosition;
+    int _lastReceivedSequenceNumber = -1;
 
 
     // Start is called before the first frame update
@@ -42,32 +45,39 @@ public class PlayerNetworkSync : MonoBehaviour
 
         float velocityDelta = Vector3.Distance(currentVelocity, _lastSentVelocity);
 
-        if (velocityDelta > 0.1f)
+        if (velocityDelta > 0.01f) // Lower threshold for better responsiveness
         {
             _lastSentVelocity = currentVelocity;
             NetworkManager.Instant.SendPlayerVelocity(currentVelocity);
-
-            _lastSentVelocity = currentVelocity;
-            _lastUpdateTime = Time.time;
         }
     }
 
-    public void ApplyServerPosition(Vector3 serverPosition)
+    public void ApplyServerPosition(Vector3 serverPosition, int sequenceNumber = 0)
     {
-        _serverPosition = serverPosition;
-        float positionError = Vector3.Distance(transform.position, _serverPosition);
-        if (positionError > 2)
+        if (sequenceNumber <= _lastReceivedSequenceNumber)
         {
-            transform.position = _serverPosition;
+            return; // Ignore out-of-order update
         }
+        _lastReceivedSequenceNumber = sequenceNumber;
+        _serverPosition = serverPosition;
     }
 
     void CorrectPosition()
     {
+        if (_serverPosition == Vector3.zero) return; // Wait for first server update
+
         float positionError = Vector3.Distance(transform.position, _serverPosition);
-        if (positionError > 0.01f && positionError <= 2)
+        Debug.LogError("Position error: " + positionError);
+
+        if (positionError > _maxPositionError)
         {
-            transform.position = Vector3.Lerp(transform.position, _serverPosition, 0.1f);
+            // Snap for large errors (e.g., teleport or major correction)
+            transform.position = _serverPosition;
+        }
+        else if (positionError > 0.01f)
+        {
+            // Lerp for small errors (smooth reconciliation)
+            transform.position = Vector3.Lerp(transform.position, _serverPosition, Time.fixedDeltaTime * _reconciliationSpeed);
         }
     }
 

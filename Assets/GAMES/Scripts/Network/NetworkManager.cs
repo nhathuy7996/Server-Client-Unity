@@ -91,6 +91,8 @@ public class NetworkManager : Singleton<NetworkManager>
             Vector3 position = new Vector3(x, y, z);
             this.localPlayer = Instantiate(localPlayerPrefab, position, Quaternion.identity);
             this.localPlayer.PlayerData.ID = playerID;
+            this.localPlayer.transform.position = position;
+            Debug.LogError("Local player ID: " + this.localPlayer.transform.position);
         });
     }
 
@@ -103,6 +105,7 @@ public class NetworkManager : Singleton<NetworkManager>
             foreach (JSONNode item in array)
             {
                 int id = item["id"].AsInt;
+                int sequenceNumber = item["sequenceNumber"].AsInt;
                 var pos = item["dirtyState"]["position"];
                 if (pos == null) continue;
 
@@ -112,7 +115,7 @@ public class NetworkManager : Singleton<NetworkManager>
                 Vector3 position = new Vector3(x, y, z);
                 if (id == localPlayer.PlayerData.ID)
                 {
-                    localPlayer.ApplyServerPosition(position);
+                    localPlayer.ApplyServerPosition(position, sequenceNumber);
                     continue; // Skip local player
                 }
                 NetworkPlayer player = remotePlayers.Find(p => p.playerData.ID == id);
